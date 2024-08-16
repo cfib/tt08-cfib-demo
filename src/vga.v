@@ -71,9 +71,9 @@ module vga(input wire clock,   input wire reset,  input wire ena,
 
             if (hline) begin
                 {sr1, sx1} <= {sx1, s1};
-                {sr2, sx2} <= {sx2, {s2[3],3'b0}};
-                {sr3, sx3} <= {sx3, {s3[3],3'b0}};
-                {sr4, sx4} <= {sx4, {s4[3],3'b0}};
+                {sr2, sx2} <= {{sx2[3],3'b0}, {s2[3],3'b0}};
+                {sr3, sx3} <= {{sx3[3],3'b0}, {s3[3],3'b0}};
+                {sr4, sx4} <= {{sx4[3],3'b0}, {s4[3],3'b0}};
             end
 
             if (x < START1) begin
