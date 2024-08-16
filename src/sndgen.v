@@ -42,15 +42,16 @@ module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sampl
     
     assign sample = sample_int[5:2];
     
-    always @(posedge clock or posedge reset)
+    always @(posedge clock or posedge reset) begin
         if (reset) begin
-            lfsr <= 32'hdeadbeef;
+            lfsr <= 16'hdead;
         end else begin
-            lfsr <= lfsr[31] ? {lfsr[30:0],1'b1} ^ 32'h2d : {lfsr[30:0],1'b0};
+            lfsr <= lfsr[15] ? {lfsr[14:0],1'b1} ^ 16'h0805 : {lfsr[14:0],1'b0};
         end
+    end
         
-    reg [9:0] rom_out;
-    reg [9:0] rom_addr;
+    reg [$clog2(SAMPLE_RATE)-1:0] rom_out;
+    reg [3:0]                     rom_addr;
         
     always @(*) begin
         case (rom_addr)
@@ -71,10 +72,10 @@ module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sampl
     end
     
     reg [5:0]  sample_ena_delay;
-    reg [15:0] p_c1;
-    reg [15:0] p_c2;
-    reg [15:0] p_c3;
-    reg [15:0] p_c4;
+    reg [$clog2(SAMPLE_RATE)-1:0] p_c1;
+    reg [$clog2(SAMPLE_RATE)-1:0] p_c2;
+    reg [$clog2(SAMPLE_RATE)-1:0] p_c3;
+    reg [$clog2(SAMPLE_RATE)-1:0] p_c4;
 
     always @(posedge clock or posedge reset)
         if (reset) begin
@@ -155,7 +156,7 @@ module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sampl
                 end
                 
                 /* generate melody note */
-                case ({lfsr[27],lfsr[21],lfsr[18]})
+                case ({lfsr[13],lfsr[8],lfsr[3]})
                     3'b100  : begin c3 <= D;   c4 <= D+4;   end
                     3'b101  : begin c3 <= E;   c4 <= E+4;   end
                     3'b110  : begin c3 <= FIS; c4 <= FIS+4; end
@@ -171,15 +172,15 @@ module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sampl
             phacc4 <= (phacc4 + p_c4) & (SAMPLE_RATE-1);
             
             /* generate samples */
-            if ((slot_counter[$clog2(TIMESLOT)-1:0] > (TIMESLOT*3)/4) || (mask_1[0] == 0 && mask_2 == 0) || (phacc1 <= SAMPLE_RATE/2) || (c1 == 0)) begin
+            if ((slot_counter[$clog2(TIMESLOT)-1:0] > (TIMESLOT*3)/4) || (mask_1[0] == 0 && mask_2 == 0) || (~phacc1[$clog2(SAMPLE_RATE)-1]) || (c1 == 0)) begin
                 s1 <= 4'b0;
             end else begin
                 s1 <= (c1 == 2'b1) ? {1'b0,lfsr[8+:3]} : lfsr[8+:4];
             end
             
-            s2     <= (phacc2 > SAMPLE_RATE/2 && mask_1[1]) ? 4'hf : 4'h0;
-            s3     <= (phacc3 > SAMPLE_RATE/2 && mask_1[2]) ? 4'hf : 4'h0;
-            s4     <= (phacc4 > SAMPLE_RATE/2 && mask_1[3]) ? 4'hf : 4'h0;
+            s2     <= (phacc2[$clog2(SAMPLE_RATE)-1] && mask_1[1]) ? 4'hf : 4'h0;
+            s3     <= (phacc3[$clog2(SAMPLE_RATE)-1] && mask_1[2]) ? 4'hf : 4'h0;
+            s4     <= (phacc4[$clog2(SAMPLE_RATE)-1] && mask_1[3]) ? 4'hf : 4'h0;
         
             /* mix samples */
             sample_int <= s1 + s2 + s3 + s4;
