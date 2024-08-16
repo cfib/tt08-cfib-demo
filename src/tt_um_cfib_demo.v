@@ -1,3 +1,4 @@
+`default_nettype none
 module tt_um_cfib_demo (
     input  wire [7:0] ui_in,    // Dedicated inputs
     output wire [7:0] uo_out,   // Dedicated outputs
@@ -12,14 +13,14 @@ module tt_um_cfib_demo (
     wire hsync, vsync, pwm;
     wire [1:0] r, g, b;
     
-    assign uo[0] = r[1];
-    assign uo[1] = g[1];
-    assign uo[2] = b[1];
-    assign uo[3] = vsync;
-    assign uo[4] = r[0];
-    assign uo[5] = g[0];
-    assign uo[6] = b[0];
-    assign uo[7] = hsync;
+    assign uo_out[0] = r[1];
+    assign uo_out[1] = g[1];
+    assign uo_out[2] = b[1];
+    assign uo_out[3] = vsync;
+    assign uo_out[4] = r[0];
+    assign uo_out[5] = g[0];
+    assign uo_out[6] = b[0];
+    assign uo_out[7] = hsync;
     
     assign uio_oe  = 8'b10000000;
     assign uio_out = {pwm, 7'b0};
