@@ -5,6 +5,7 @@ module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sampl
     
     localparam TIMESLOT  = SAMPLE_RATE/8;
     localparam BARSLOT   = 16;
+    localparam LFSRTIME  = SAMPLE_RATE-128;
     
     reg [$clog2(SAMPLE_RATE)-1:0]      phacc1;
     reg [$clog2(SAMPLE_RATE)-1:0]      phacc2;
@@ -55,18 +56,17 @@ module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sampl
         
     always @(*) begin
         case (rom_addr)
-            0 : rom_out = 0;
-            1 : rom_out = 277;
-            2 : rom_out = 294;
-            3 : rom_out = 311;
-            4 : rom_out = 330;
-            5 : rom_out = 369;
-            6 : rom_out = 392;
-            7 : rom_out = 415;
-            8 : rom_out = 440;
-            9 : rom_out = 466;
-            10: rom_out = 494;
-            11: rom_out = 261;
+            D   : rom_out = 277;
+            //DIS : rom_out = 294;
+            E   : rom_out = 311;
+            F   : rom_out = 330;
+            FIS : rom_out = 369;
+            G   : rom_out = 392;
+            GIS : rom_out = 415;
+            //A   : rom_out = 440;
+            AIS : rom_out = 466;
+            //H   : rom_out = 494;
+            C   : rom_out = 261;
             default: rom_out = 0;
         endcase
     end
@@ -146,30 +146,30 @@ module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sampl
                 endcase
                 
                 /* generate bass note */
-                if (& bar_counter[1:0]) begin
+                if (bar_counter[1:0] == 2'b11) begin
                     case (bar_counter[3:2])
-                        0 : c2 <= D;
-                        1 : c2 <= E;
-                        2 : c2 <= G;
-                        3 : c2 <= F;
+                        2'b00 : c2 <= D;
+                        2'b01 : c2 <= E;
+                        2'b10 : c2 <= G;
+                        2'b11 : c2 <= F;
                     endcase
                 end
                 
                 /* generate melody note */
                 case ({lfsr[13],lfsr[8],lfsr[3]})
-                    3'b100  : begin c3 <= D;   c4 <= D+4;   end
-                    3'b101  : begin c3 <= E;   c4 <= E+4;   end
-                    3'b110  : begin c3 <= FIS; c4 <= FIS+4; end
-                    3'b111  : begin c3 <= GIS; c4 <= GIS+4; end
+                    3'b100  : begin c3 <= D;   c4 <= FIS;   end
+                    3'b101  : begin c3 <= E;   c4 <= GIS;   end
+                    3'b110  : begin c3 <= FIS; c4 <= AIS;   end
+                    3'b111  : begin c3 <= GIS; c4 <= C;     end
                     default : begin c3 <= 0;   c4 <= 0;     end
                 endcase
             end
             
             /* generate tones */
-            phacc1 <= (phacc1 + SAMPLE_RATE-128) & (SAMPLE_RATE-1);
-            phacc2 <= (slot_counter[1:0]==2'b0) ? (phacc2 + p_c2) & (SAMPLE_RATE-1) : phacc2;
-            phacc3 <= (phacc3 + p_c3) & (SAMPLE_RATE-1);
-            phacc4 <= (phacc4 + p_c4) & (SAMPLE_RATE-1);
+            phacc1 <= (phacc1 + LFSRTIME);
+            phacc2 <= ~(&slot_counter[1:0]) ? (phacc2 + p_c2) : phacc2;
+            phacc3 <= (phacc3 + p_c3);
+            phacc4 <= (phacc4 + p_c4);
             
             /* generate samples */
             if ((slot_counter[$clog2(TIMESLOT)-1:0] > (TIMESLOT*3)/4) || (mask_1[0] == 0 && mask_2 == 0) || (~phacc1[$clog2(SAMPLE_RATE)-1]) || (c1 == 0)) begin

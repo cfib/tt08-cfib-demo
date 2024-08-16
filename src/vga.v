@@ -24,15 +24,15 @@ module vga(input wire clock,   input wire reset,  input wire ena,
         end
     end 
     
-    localparam HVIS=640;
-    localparam VVIS=480;
-    localparam HFP=16;
-    localparam HSYNC=96;
-    localparam VFP=10;
-    localparam VSYNC=2;
+    localparam HVIS=10'd640;
+    localparam VVIS=10'd480;
+    localparam HFP=10'd16;
+    localparam HSYNC=10'd96;
+    localparam VFP=10'd10;
+    localparam VSYNC=10'd2;
     
-    localparam SPACE=25;
-    localparam CHANNEL=128;
+    localparam SPACE=10'd26;
+    localparam CHANNEL=10'd128;
     
     reg  [3:0] sx1, sx2, sx3, sx4;
     reg  [3:0] sr1, sr2, sr3, sr4;
@@ -41,7 +41,16 @@ module vga(input wire clock,   input wire reset,  input wire ena,
     wire [5:0] nbg = 6'h3f;
     reg  [3:0] xmin;
     reg  [3:0] xmax;
-
+    
+    localparam START1 = SPACE;
+    localparam END1   = START1+CHANNEL;
+    localparam START2 = END1+SPACE;
+    localparam END2   = START2+CHANNEL;
+    localparam START3 = END2+SPACE;
+    localparam END3   = START3+CHANNEL;
+    localparam START4 = END3+SPACE;
+    localparam END4   = START4+CHANNEL;
+    
     always @(posedge clock or posedge reset) begin
         if (reset) begin
             hsync <= 1'b1;
@@ -58,53 +67,41 @@ module vga(input wire clock,   input wire reset,  input wire ena,
             sx2   <= 4'b0;
             sx3   <= 4'b0;
             sx4   <= 4'b0;
+            xmin  <= 4'b0;
+            xmax  <= 4'b0;
         end else if (ena) begin
             hsync <= !(x > HVIS+HFP && x < HVIS+HFP+HSYNC);
             vsync <= !(y > VVIS+VFP && y < VVIS+VFP+VSYNC);
-            if (x == HVIS && y[0]) begin
+            if (x == HVIS) begin
                 {sr1, sx1} <= {sx1, s1};
                 {sr2, sx2} <= {sx2, s2};
                 {sr3, sx3} <= {sx3, s3};
                 {sr4, sx4} <= {sx4, s4};
             end
-            if (x < HVIS && y < VVIS) begin
-                x1 <= x1 + 1'b1;
-                if          (x < SPACE) begin
-                    x1        <= 7'b0;
-                    xmin      <= (sx1 < sr1) ? sx1  : sr1;
-                    xmax      <= (sx1 > sr1) ? sx1  : sr1;
-                    
-                    {r, g, b} <= bg;
-                end else if (x >= SPACE && x < SPACE+CHANNEL) begin
-                    {r, g, b} <= (x1 > {xmin,3'b0}  && x1 <= {xmax,3'b11}) ? nbg : bg;
-                end else if (x < 2*SPACE+CHANNEL) begin
-                    x1        <= 7'b0;
-                    xmin      <= (sx2 < sr2) ? sx2  : sr2;
-                    xmax      <= (sx2 > sr2) ? sx2  : sr2;
-                    
-                    {r, g, b} <= bg;
-                end else if (x >= 2*SPACE+CHANNEL   && x < 2*SPACE+2*CHANNEL) begin
-                    {r, g, b} <= (x1 > {xmin,3'b0}  && x1 <= {xmax,3'b11}) ? nbg : bg;
-                end else if (x < 3*SPACE+2*CHANNEL) begin
-                    x1        <= 7'b0;
-                    xmin      <= (sx3 < sr3) ? sx3  : sr3;
-                    xmax      <= (sx3 > sr3) ? sx3  : sr3;
-                    
-                    {r, g, b} <= bg;
-                end else if (x >= 3*SPACE+2*CHANNEL && x < 3*SPACE+3*CHANNEL) begin
-                    {r, g, b} <= (x1 > {xmin,3'b0}  && x1 <= {xmax,3'b11}) ? nbg : bg;
-                end else if (x < 4*SPACE+3*CHANNEL) begin
-                    x1        <= 7'b0;
-                    xmin      <= (sx4 < sr4) ? sx4  : sr4;
-                    xmax      <= (sx4 > sr4) ? sx4  : sr4;
-                    
-                    {r, g, b} <= bg;
-                end else if (x >= 4*SPACE+3*CHANNEL && x < 4*SPACE+4*CHANNEL) begin
-                    {r, g, b} <= (x1 > {xmin,3'b0}  && x1 <= {xmax,3'b11}) ? nbg : bg;
-                end else begin
-                    {r, g, b} <= bg;
-                    x1        <= 7'b0;
-                end
+
+            if (x < START1) begin
+                x1           <= 7'b0;
+                {xmin, xmax} <= (sx1 < sr1) ? {sx1, sr1} : {sr1, sx1};
+            end else if (x >= END1 && x < START2) begin
+                x1           <= 7'b0;
+                {xmin, xmax} <= (sx2 < sr2) ? {sx2, sr2} : {sr2, sx2};
+            end else if (x >= END2 && x < START3) begin
+                x1           <= 7'b0;
+                {xmin, xmax} <= (sx3 < sr3) ? {sx3, sr3} : {sr3, sx3};
+            end else if (x >= END3 && x < START4) begin
+                x1           <= 7'b0;
+                {xmin, xmax} <= (sx4 < sr4) ? {sx4, sr4} : {sr4, sx4};
+            end else begin
+                x1           <= x1 + 1'b1;
+            end
+                
+            if ((x >= START1   && x < END1) || 
+                (x >= START2   && x < END2) || 
+                (x >= START3   && x < END3) || 
+                (x >= START4   && x < END4)) begin
+                {r, g, b} <= (x1[6:3] >= xmin  && x1 <= {xmax,3'b011}) ? nbg : bg;
+            end else if (x < HVIS && y < VVIS) begin
+                {r, g, b} <= bg;
             end else begin
                 {r, g, b} <= 6'b0;
             end
