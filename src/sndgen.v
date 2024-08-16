@@ -25,7 +25,7 @@ module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sampl
     reg [3:0]                          c3;
     reg [3:0]                          c4;
     
-    reg [31:0] lfsr;
+    reg [15:0] lfsr;
    
    
     localparam D=1;
@@ -71,34 +71,35 @@ module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sampl
         endcase
     end
     
-    reg [5:0]  sample_ena_delay;
-    reg [$clog2(SAMPLE_RATE)-1:0] p_c1;
+    wire [$clog2(SAMPLE_RATE)-1:0] sample_rom_out = SAMPLE_RATE-rom_out;
+    
+    reg [3:0]  sample_ena_delay;
     reg [$clog2(SAMPLE_RATE)-1:0] p_c2;
     reg [$clog2(SAMPLE_RATE)-1:0] p_c3;
     reg [$clog2(SAMPLE_RATE)-1:0] p_c4;
 
     always @(posedge clock or posedge reset)
         if (reset) begin
-            sample_ena_delay = 1'b0;
+            sample_ena_delay = 4'b0;
             p_c2 <= 0;
             p_c3 <= 0;
             p_c4 <= 0;
             rom_addr <= 0;
         end else begin
-            sample_ena_delay = {sample_ena_delay[4:0],sample_ena};
+            sample_ena_delay = {sample_ena_delay[2:0],sample_ena};
             if (sample_ena_delay[0]) begin
                 rom_addr <= c2;
             end
             if (sample_ena_delay[1]) begin
-                p_c2 <= SAMPLE_RATE-rom_out;
+                p_c2 <= sample_rom_out;
                 rom_addr <= c3;
             end
             if (sample_ena_delay[2]) begin
-                p_c3 <= SAMPLE_RATE-rom_out;
+                p_c3 <= sample_rom_out;
                 rom_addr <= c4;
             end
             if (sample_ena_delay[3]) begin
-                p_c4 <= SAMPLE_RATE-rom_out;
+                p_c4 <= sample_rom_out;
             end
         end
         
@@ -135,14 +136,14 @@ module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sampl
                 
                 /* generate perc note */
                 case (bar_counter[2:0])
-                    0 : c1 <= 2;
-                    1 : c1 <= 0;
-                    2 : c1 <= 1;
-                    3 : c1 <= 0;
-                    4 : c1 <= 2;
-                    5 : c1 <= 1;
-                    6 : c1 <= 1;
-                    7 : c1 <= 0;
+                    0 : c1 <= 2'd2;
+                    1 : c1 <= 2'd0;
+                    2 : c1 <= 2'd1;
+                    3 : c1 <= 2'd0;
+                    4 : c1 <= 2'd2;
+                    5 : c1 <= 2'd1;
+                    6 : c1 <= 2'd1;
+                    7 : c1 <= 2'd0;
                 endcase
                 
                 /* generate bass note */

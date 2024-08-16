@@ -2,6 +2,7 @@ module vga(input wire clock,   input wire reset,  input wire ena,
            input wire [5:0] dat,
            input wire [3:0] s1, input wire[3:0] s2, input wire [3:0] s3, input wire [3:0] s4,
            output reg hsync,   output reg vsync, 
+           output wire hline,
            output reg [1:0] r, output reg [1:0] g, output reg [1:0] b);
            
 
@@ -51,13 +52,10 @@ module vga(input wire clock,   input wire reset,  input wire ena,
     localparam START4 = END3+SPACE;
     localparam END4   = START4+CHANNEL;
     
+    assign hline = (x == HVIS) & ena;
+    
     always @(posedge clock or posedge reset) begin
         if (reset) begin
-            hsync <= 1'b1;
-            vsync <= 1'b1;
-            r     <= 2'b0;
-            g     <= 2'b0;
-            b     <= 2'b0;
             x1    <= 7'b0;
             sr1   <= 4'b0;
             sr2   <= 4'b0;
@@ -70,13 +68,12 @@ module vga(input wire clock,   input wire reset,  input wire ena,
             xmin  <= 4'b0;
             xmax  <= 4'b0;
         end else if (ena) begin
-            hsync <= !(x > HVIS+HFP && x < HVIS+HFP+HSYNC);
-            vsync <= !(y > VVIS+VFP && y < VVIS+VFP+VSYNC);
-            if (x == HVIS) begin
+
+            if (hline) begin
                 {sr1, sx1} <= {sx1, s1};
-                {sr2, sx2} <= {sx2, s2};
-                {sr3, sx3} <= {sx3, s3};
-                {sr4, sx4} <= {sx4, s4};
+                {sr2, sx2} <= {sx2, {s2[3],3'b0}};
+                {sr3, sx3} <= {sx3, {s3[3],3'b0}};
+                {sr4, sx4} <= {sx4, {s4[3],3'b0}};
             end
 
             if (x < START1) begin
@@ -95,16 +92,20 @@ module vga(input wire clock,   input wire reset,  input wire ena,
                 x1           <= x1 + 1'b1;
             end
                 
-            if ((x >= START1   && x < END1) || 
-                (x >= START2   && x < END2) || 
-                (x >= START3   && x < END3) || 
-                (x >= START4   && x < END4)) begin
-                {r, g, b} <= (x1[6:3] >= xmin  && x1 <= {xmax,3'b011}) ? nbg : bg;
-            end else if (x < HVIS && y < VVIS) begin
-                {r, g, b} <= bg;
-            end else begin
-                {r, g, b} <= 6'b0;
-            end
+        end
+    end
+    
+    always @(*) begin
+        hsync = !(x > HVIS+HFP && x < HVIS+HFP+HSYNC);
+        vsync = !(y > VVIS+VFP && y < VVIS+VFP+VSYNC);
+        {r, g, b} = 6'b0;
+        if ((x >= START1   && x < END1) || 
+            (x >= START2   && x < END2) || 
+            (x >= START3   && x < END3) || 
+            (x >= START4   && x < END4)) begin
+            {r, g, b} = (x1[6:3] >= xmin  && x1 <= {xmax,3'b011}) ? nbg : bg;
+        end else if (x < HVIS && y < VVIS) begin
+            {r, g, b} = bg;
         end
     end
 

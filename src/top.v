@@ -8,7 +8,7 @@ module top(input wire clock, input wire reset, output wire hsync, output wire vs
     localparam CLOCK_FREQUENCY = 50000000;
     localparam SAMPLE_RATE     = 16384;
     
-    reg [11:0] sample_presc;
+    reg [$clog2(CLOCK_FREQUENCY/SAMPLE_RATE)-1:0] sample_presc;
     reg [4:0]  sys_presc;
     
     wire [3:0] s1, s2, s3, s4;
@@ -29,9 +29,9 @@ module top(input wire clock, input wire reset, output wire hsync, output wire vs
     end
     
     wire [3:0] sample;
-    
+    wire hline;
     sndgen #(.SAMPLE_RATE(SAMPLE_RATE)) sndgen_inst (.clock(clock), .sample_ena(sample_ena), .reset(reset), .sample(sample), .s1_o(s1), .s2_o(s2), .s3_o(s3), .s4_o(s4));
     pwm4bit    pwm_inst (.clock(clock),.reset(reset),.ena(pwm_ena),.sample(sample),.pwm(pwm));
-    vga        vga_inst (.clock(clock),.reset(reset),.ena(vga_ena),.dat({sample,pwm,sample_ena}),.hsync(hsync),.vsync(vsync),.r(r),.g(g),.b(b),.s1(sample),.s2(s2),.s3(s3),.s4(s4));
+    vga        vga_inst (.clock(clock),.reset(reset),.ena(vga_ena),.dat({sample,pwm,sample_ena}),.hline(hline),.hsync(hsync),.vsync(vsync),.r(r),.g(g),.b(b),.s1(sample),.s2(s2),.s3(s3),.s4(s4));
 
 endmodule
