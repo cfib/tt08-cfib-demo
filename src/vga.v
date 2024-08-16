@@ -37,22 +37,22 @@ module vga(input wire clock,   input wire reset,  input wire ena,
     
     reg  [3:0] sx1, sr1;
     reg  sx2, sx3, sx4, sr2, sr3, sr4;
-    reg  [6:0] x1;
+    reg  [7:0] x1;
     wire [5:0] bg = {x[1+:6] ^ y [1+:6]} & 6'b011000;
     wire [5:0] nbg = 6'h3f;
     reg  [3:0] xmin;
     reg  [3:0] xmax;
     
-    localparam START1 = 160-64;  //SPACE;
-    localparam END1   = 160+64; //START1+CHANNEL;
-    localparam START2 = 160+320-64;  //SPACE;
-    localparam END2   = 160+320+64; //START1+CHANNEL;
+    localparam START1 = 320-128;  //SPACE;
+    localparam END1   = 320+128; //START1+CHANNEL;
+    //localparam START2 = 160+320-64;  //SPACE;
+    //localparam END2   = 160+320+64; //START1+CHANNEL;
 
     assign hline = (x == HVIS & y[0]) & ena;
     
     always @(posedge clock or posedge reset) begin
         if (reset) begin
-            x1    <= 7'b0;
+            x1    <= 8'b0;
             sr1   <= 4'b0;
             sr2   <= 1'b0;
             sr3   <= 1'b0;
@@ -67,23 +67,23 @@ module vga(input wire clock,   input wire reset,  input wire ena,
 
             if (hline) begin
                 {sr1, sx1} <= {sx1, s1};
+            /*
                 {sr2, sx2} <= {sx2, s2[3]};
                 {sr3, sx3} <= {sx3, s3[3]};
                 {sr4, sx4} <= {sx4, s4[3]};
+            */
             end
 
             if (x < START1) begin
-                x1           <= 7'b0;
+                x1           <= 8'b0;
                 {xmin, xmax} <= (sx1 < sr1) ? {sx1, sr1} : {sr1, sx1};
             /*
             end else if (x >= END1 && x < START2) begin
                 x1           <= 7'b0;
                 {xmin, xmax} <= (sr2) ? {{4{sx2}}, {4{sr2}}} : {{4{sr2}}, {4{sx2}}};
-            */
             end else if (x >= END1 && x < START2) begin
                 x1           <= 7'b0;
                 {xmin, xmax} <= (sr3) ? {{4{sx3}}, {4{sr3}}} : {{4{sr3}}, {4{sx3}}};
-            /*
             end else if (x >= END3 && x < START4) begin
                 x1           <= 7'b0;
                 {xmin, xmax} <= (sr4) ? {{4{sx4}}, {4{sr4}}} : {{4{sr4}}, {4{sx4}}};
@@ -99,10 +99,8 @@ module vga(input wire clock,   input wire reset,  input wire ena,
         hsync = !(x > HVIS+HFP && x < HVIS+HFP+HSYNC);
         vsync = !(y > VVIS+VFP && y < VVIS+VFP+VSYNC);
         {r, g, b} = 6'b0;
-        if ((x >= START1   && x < END1) ||
-            (x >= START2   && x < END2)
-            ) begin
-            {r, g, b} = (x1[6:3] >= xmin  && x1 <= {xmax,3'b011}) ? nbg : bg;
+        if ((x >= START1   && x < END1)) begin
+            {r, g, b} = (x1[7:4] >= xmin  && x1 <= {xmax,4'b0011}) ? nbg : bg;
         end else if (x < HVIS && y < VVIS) begin
             {r, g, b} = bg;
         end
