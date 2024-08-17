@@ -45,7 +45,7 @@ module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sampl
     
     always @(posedge clock or posedge reset) begin
         if (reset) begin
-            lfsr <= 16'hdead;
+            lfsr <= 8'hcf;
         end else begin
             lfsr <= lfsr[7] ? {lfsr[6:0],1'b1} ^ 8'h0d : {lfsr[6:0],1'b0};
         end
@@ -56,22 +56,20 @@ module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sampl
         
     always @(*) begin
         case (rom_addr)
-            D   : rom_out = 277;
+            D   : rom_out = SAMPLE_RATE-277;
             //DIS : rom_out = 294;
-            E   : rom_out = 311;
-            F   : rom_out = 330;
-            FIS : rom_out = 369;
-            G   : rom_out = 392;
-            GIS : rom_out = 415;
+            E   : rom_out = SAMPLE_RATE-311;
+            F   : rom_out = SAMPLE_RATE-330;
+            FIS : rom_out = SAMPLE_RATE-369;
+            G   : rom_out = SAMPLE_RATE-392;
+            GIS : rom_out = SAMPLE_RATE-415;
             //A   : rom_out = 440;
-            AIS : rom_out = 466;
+            AIS : rom_out = SAMPLE_RATE-466;
             //H   : rom_out = 494;
-            C   : rom_out = 261;
+            C   : rom_out = SAMPLE_RATE-261;
             default: rom_out = 0;
         endcase
     end
-    
-    wire [$clog2(SAMPLE_RATE)-1:0] sample_rom_out = SAMPLE_RATE-rom_out;
     
     reg [3:0]  sample_ena_delay;
     reg [$clog2(SAMPLE_RATE)-1:0] p_c2;
@@ -91,15 +89,15 @@ module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sampl
                 rom_addr <= c2;
             end
             if (sample_ena_delay[1]) begin
-                p_c2 <= sample_rom_out;
+                p_c2 <= rom_out;
                 rom_addr <= c3;
             end
             if (sample_ena_delay[2]) begin
-                p_c3 <= sample_rom_out;
+                p_c3 <= rom_out;
                 rom_addr <= c4;
             end
             if (sample_ena_delay[3]) begin
-                p_c4 <= sample_rom_out;
+                p_c4 <= rom_out;
             end
         end
         
