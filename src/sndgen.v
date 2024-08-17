@@ -5,7 +5,7 @@ module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sampl
     
     localparam TIMESLOT  = SAMPLE_RATE/8;
     localparam BARSLOT   = 16;
-    localparam LFSRTIME  = SAMPLE_RATE-128;
+    localparam LFSRTIME  = SAMPLE_RATE-14'd128;
     
     reg [$clog2(SAMPLE_RATE)-1:0]      phacc1;
     reg [$clog2(SAMPLE_RATE)-1:0]      phacc2;
@@ -20,7 +20,7 @@ module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sampl
     reg                                s3;
     reg                                s4;
     
-    reg [3:0]                          c1;
+    reg [1:0]                          c1;
     reg [3:0]                          c2;
     reg [3:0]                          c3;
     reg [3:0]                          c4;
@@ -56,17 +56,17 @@ module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sampl
         
     always @(*) begin
         case (rom_addr)
-            D   : rom_out = SAMPLE_RATE-277;
+            D   : rom_out = SAMPLE_RATE-14'd277;
             //DIS : rom_out = 294;
-            E   : rom_out = SAMPLE_RATE-311;
-            F   : rom_out = SAMPLE_RATE-330;
-            FIS : rom_out = SAMPLE_RATE-369;
-            G   : rom_out = SAMPLE_RATE-392;
-            GIS : rom_out = SAMPLE_RATE-415;
+            E   : rom_out = SAMPLE_RATE-14'd311;
+            F   : rom_out = SAMPLE_RATE-14'd330;
+            FIS : rom_out = SAMPLE_RATE-14'd369;
+            G   : rom_out = SAMPLE_RATE-14'd392;
+            GIS : rom_out = SAMPLE_RATE-14'd415;
             //A   : rom_out = 440;
-            AIS : rom_out = SAMPLE_RATE-466;
+            AIS : rom_out = SAMPLE_RATE-14'd466;
             //H   : rom_out = 494;
-            C   : rom_out = SAMPLE_RATE-261;
+            C   : rom_out = SAMPLE_RATE-14'd261;
             default: rom_out = 0;
         endcase
     end
@@ -121,8 +121,8 @@ module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sampl
             
             /* generate masks at start of new bar */
             if (& slot_counter) begin
-                mask_1 <=   lfsr[5+:4];
-                mask_2 <= | lfsr[7+:4];
+                mask_1 <=   lfsr[1+:4];
+                mask_2 <= | lfsr[3+:4];
             end
             
             if (& slot_counter[$clog2(TIMESLOT)-1:0]) begin
@@ -172,7 +172,7 @@ module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sampl
         
     always @(*) begin
         /* generate samples */
-        if ((slot_counter[$clog2(TIMESLOT)-1:0] > (TIMESLOT*3)/4) || ({mask_1[0],mask_2} == 2'b0) || (~phacc1[$clog2(SAMPLE_RATE)-1]) || (c1 == 0)) begin
+        if ((slot_counter[$clog2(TIMESLOT)-1:0] > (TIMESLOT*3)/4) || ({mask_1[0],mask_2} == 2'b0) || (~phacc1[$clog2(SAMPLE_RATE)-1]) || (c1 == 2'b0)) begin
             s1 = 4'b0;
         end else begin
             s1 = (c1 == 2'b1) ? {1'b0,lfsr[3+:3]} : lfsr[3+:4];

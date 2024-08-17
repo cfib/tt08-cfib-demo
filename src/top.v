@@ -6,7 +6,7 @@ module top(input wire clock, input wire reset, output wire hsync, output wire vs
     /* prescaler unit */
     /* assume 50 MHz clock */
     localparam CLOCK_FREQUENCY = 50000000;
-    localparam SAMPLE_RATE     = 16384;
+    localparam SAMPLE_RATE     = 15'd16384;
     
     reg [4:0]  sys_presc;
     
