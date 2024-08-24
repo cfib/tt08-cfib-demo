@@ -1,7 +1,6 @@
 module vga(input wire clock,   input wire reset,  input wire ena, 
-           input wire [5:0] dat,
-           input wire [5:0] bar_counter,
-           input wire [3:0] s1, input wire[3:0] s2, input wire [3:0] s3, input wire [3:0] s4,
+           input wire [3:0] sample,
+           input wire s1, input wire s2, input wire s3, input wire s4,
            output reg hsync,   output reg vsync, 
            output wire hline,
            output reg [1:0] r, output reg [1:0] g, output reg [1:0] b);
@@ -62,10 +61,10 @@ module vga(input wire clock,   input wire reset,  input wire ena,
         end else if (ena) begin
 
             if (hline) begin
-                {sr1, sx1} <= {sx1, s1};
+                {sr1, sx1} <= {sx1, sample};
             end
 
-            if (x < START1) begin
+            if (x < START2) begin
                 x1           <= 8'b0;
                 {xmin, xmax} <= (sx1 < sr1) ? {sx1, sr1} : {sr1, sx1};
             end else begin
@@ -75,10 +74,13 @@ module vga(input wire clock,   input wire reset,  input wire ena,
         end
     end
     
-    localparam STARTY  = 9'd16;
-    localparam STARTY2 = 9'd32;
-    localparam ENDY    = 9'd480-32;
-    localparam ENDY2   = 9'd480-16;
+    
+    localparam DSTART  = 9'd16;
+    localparam DDIFF   = 9'd16;
+    localparam STARTY  = DSTART;
+    localparam STARTY2 = STARTY+DDIFF;
+    localparam ENDY    = 9'd480-DSTART;
+    localparam ENDY2   = ENDY+DDIFF;
     
     always @(*) begin
         hsync = !(x > HVIS+HFP && x < HVIS+HFP+HSYNC);
@@ -89,8 +91,25 @@ module vga(input wire clock,   input wire reset,  input wire ena,
         end
         
         if (y >= STARTY && y <= ENDY && x >= START1 && x <= END1) begin
+        
             {r, g, b} = (x1[7:4] >= xmin  && x1 <= {xmax,4'b0011})   ? 6'b001100 :
                         (x[3:0] == 4'b0000 || y[3:0] == 4'b0000)     ? 6'b001000 : 6'b000100;
+                        
+            if (y > STARTY && y < STARTY+16) begin
+                if (x >  START1    && x < START1+16) begin
+                    g[1] = s1;
+                end
+                if (x >  START1+16  && x < START1+32) begin
+                    g[1] = s2;
+                end
+                if (x >  START1+32 && x < START1+48) begin
+                    g[1] = s3;
+                end
+                if (x >  START1+48 && x < START1+64) begin
+                    g[1] = s4;
+                end
+            end
+                        
         end else if (y >= STARTY2 && y < ENDY2 && x >= START2 && x < END2) begin
             {r, g, b} = {1'b0,bg[5],1'b0,bg[3],1'b0,bg[1]};
         end

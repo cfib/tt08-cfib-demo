@@ -1,11 +1,11 @@
 module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sample_ena, input wire reset, output wire [3:0] sample, output wire [5:0] bar_counter_o,
-                                             output wire [3:0] s1_o, output wire [3:0] s2_o, output wire [3:0] s3_o, output wire [3:0] s4_o);
+                                             output wire s1_o, output wire s2_o, output wire s3_o, output wire s4_o);
 
     reg [5:0] sample_int;
     
     localparam TIMESLOT  = SAMPLE_RATE/8;
     localparam BARSLOT   = 16;
-    localparam LFSRTIME  = SAMPLE_RATE-14'd128;
+    localparam LFSRTIME  = SAMPLE_RATE-14'd1024;
     
     reg [$clog2(SAMPLE_RATE)-1:0]      phacc1;
     reg [$clog2(SAMPLE_RATE)-1:0]      phacc2;
@@ -45,9 +45,9 @@ module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sampl
     
     always @(posedge clock or posedge reset) begin
         if (reset) begin
-            lfsr <= 8'hcf;
-        end else begin
-            lfsr <= lfsr[7] ? {lfsr[6:0],1'b1} ^ 8'h1d : {lfsr[6:0],1'b0};
+            lfsr <= 8'h01;
+        end else if (sample_ena) begin
+            lfsr <= lfsr[7] ? {lfsr[6:0],1'b1} ^ 8'b01110000 : {lfsr[6:0],1'b0};
         end
     end
         
@@ -71,6 +71,7 @@ module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sampl
         endcase
     end
     
+    reg [3:0]  llsr;
     reg [3:0]  sample_ena_delay;
     reg [$clog2(SAMPLE_RATE)-1:0] p_c2;
     reg [$clog2(SAMPLE_RATE)-1:0] p_c3;
@@ -114,7 +115,6 @@ module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sampl
             c4             <= 5;
             mask_1         <= 4'hf;
             mask_2         <= 1'b1;
-            phacc1         <= 0;
             phacc2         <= 0;
             phacc3         <= 0;
             phacc4         <= 0;
@@ -123,8 +123,8 @@ module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sampl
             
             /* generate masks at start of new bar */
             if (& slot_counter) begin
-                mask_1 <=   lfsr[1+:4];
-                mask_2 <= | lfsr[3+:4];
+                mask_1 <=  lfsr[1+:4];
+                mask_2 <=  | (lfsr[1+:3]) ? 1'b0 : 1'b1; /* prevent silence */
             end
             
             if (& slot_counter[$clog2(TIMESLOT)-1:0]) begin
@@ -146,13 +146,13 @@ module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sampl
                     case (bar_counter[3:2])
                         2'b00 : c2 <= D;
                         2'b01 : c2 <= E;
-                        2'b10 : c2 <= G;
-                        2'b11 : c2 <= F;
+                        2'b10 : c2 <= GIS;
+                        2'b11 : c2 <= FIS;
                     endcase
                 end
                 
                 /* generate melody note */
-                case ({lfsr[7],lfsr[4],lfsr[1]})
+                case ({lfsr[7],lfsr[5],lfsr[3]})
                     3'b100  : begin c3 <= D;   c4 <= FIS;   end
                     3'b101  : begin c3 <= E;   c4 <= GIS;   end
                     3'b110  : begin c3 <= FIS; c4 <= AIS;   end
@@ -162,7 +162,6 @@ module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sampl
             end
             
             /* generate tones */
-            phacc1 <= (phacc1 + LFSRTIME);
             if (&slot_counter[1:0]) begin
                 phacc2 <= (phacc2 + p_c2);
             end
@@ -172,22 +171,27 @@ module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sampl
         end
     end
         
+    wire three_quarters = (slot_counter[$clog2(TIMESLOT)-1:0] > ((TIMESLOT*3)/4));
+        
     always @(*) begin
         /* generate samples */
-        if ((slot_counter[$clog2(TIMESLOT)-1:0] > (TIMESLOT*3)/4) || ({mask_1[0],mask_2} == 2'b0) || (~phacc1[$clog2(SAMPLE_RATE)-1]) || (c1 == 2'b0)) begin
+        if (three_quarters || ({mask_1[0],mask_2} == 2'b0) || (c1 == 2'b0)) begin
             s1 = 4'b1000;
         end else begin
-            s1 = (c1 == 2'b1) ? {1'b0,lfsr[3+:3]} : lfsr[3+:4];
+            s1 = (c1 == 2'b1) ? {1'b0,{lfsr[7],lfsr[5],lfsr[3]}} : {lfsr[7],lfsr[5],lfsr[3],lfsr[1]};
         end
         
-        s2     = mask_1[1] ? phacc2[$clog2(SAMPLE_RATE)-1] ? 4'b1100 : 4'b0100 : 4'b1000;
-        s3     = mask_1[2] ? phacc3[$clog2(SAMPLE_RATE)-1] ? 4'b1100 : 4'b0100 : 4'b1000;
-        s4     = mask_1[3] ? phacc4[$clog2(SAMPLE_RATE)-1] ? 4'b1100 : 4'b0100 : 4'b1000;
+        s2     = (mask_1[1] & ~three_quarters) ? phacc2[$clog2(SAMPLE_RATE)-1] ? 4'b1100 : 4'b0100 : 4'b1000;
+        s3     = mask_1[2]                     ? phacc3[$clog2(SAMPLE_RATE)-1] ? 4'b1100 : 4'b0100 : 4'b1000;
+        s4     = mask_1[3]                     ? phacc4[$clog2(SAMPLE_RATE)-1] ? 4'b1100 : 4'b0100 : 4'b1000;
     
         /* mix samples */
         sample_int = s1 + s2 + s3 + s4;
     end
-        
-    assign {s1_o, s2_o, s3_o, s4_o} = {s1, s2, s3, s4};
+
+    assign s1_o = {!(({mask_1[0],mask_2} == 2'b0) || (c1 == 2'b0))};
+    assign s2_o = {mask_1[1]           ? c2 != 0 : 1'b0};
+    assign s3_o = {mask_1[2]           ? c3 != 0 : 1'b0};
+    assign s4_o = {mask_1[3]           ? c4 != 0 : 1'b0};
 
 endmodule
