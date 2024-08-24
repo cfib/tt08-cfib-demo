@@ -1,4 +1,4 @@
-module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sample_ena, input wire reset, output wire [3:0] sample, output wire [5:0] bar_counter_o,
+module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sample_ena, input wire reset, output wire [3:0] sample,
                                              output wire s1_o, output wire s2_o, output wire s3_o, output wire s4_o);
 
     reg [5:0] sample_int;
@@ -77,7 +77,6 @@ module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sampl
     reg [$clog2(SAMPLE_RATE)-1:0] p_c3;
     reg [$clog2(SAMPLE_RATE)-1:0] p_c4;
     
-    assign bar_counter_o = slot_counter[$clog2(TIMESLOT)+$clog2(BARSLOT)-1:$clog2(TIMESLOT)+$clog2(BARSLOT)-6];
 
     always @(posedge clock or posedge reset)
         if (reset) begin
