@@ -1,4 +1,4 @@
-module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sample_ena, input wire reset, output wire [3:0] sample,
+module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sample_ena, input wire reset, output wire [3:0] sample, output wire [5:0] bar_counter_o,
                                              output wire [3:0] s1_o, output wire [3:0] s2_o, output wire [3:0] s3_o, output wire [3:0] s4_o);
 
     reg [5:0] sample_int;
@@ -16,9 +16,9 @@ module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sampl
     reg                                mask_2;
     
     reg [3:0]                          s1;
-    reg                                s2;
-    reg                                s3;
-    reg                                s4;
+    reg [3:0]                          s2;
+    reg [3:0]                          s3;
+    reg [3:0]                          s4;
     
     reg [1:0]                          c1;
     reg [3:0]                          c2;
@@ -47,7 +47,7 @@ module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sampl
         if (reset) begin
             lfsr <= 8'hcf;
         end else begin
-            lfsr <= lfsr[7] ? {lfsr[6:0],1'b1} ^ 8'h0d : {lfsr[6:0],1'b0};
+            lfsr <= lfsr[7] ? {lfsr[6:0],1'b1} ^ 8'h1d : {lfsr[6:0],1'b0};
         end
     end
         
@@ -75,6 +75,8 @@ module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sampl
     reg [$clog2(SAMPLE_RATE)-1:0] p_c2;
     reg [$clog2(SAMPLE_RATE)-1:0] p_c3;
     reg [$clog2(SAMPLE_RATE)-1:0] p_c4;
+    
+    assign bar_counter_o = slot_counter[$clog2(TIMESLOT)+$clog2(BARSLOT)-1:$clog2(TIMESLOT)+$clog2(BARSLOT)-6];
 
     always @(posedge clock or posedge reset)
         if (reset) begin
@@ -140,7 +142,7 @@ module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sampl
                 endcase
                 
                 /* generate bass note */
-                if (bar_counter[0] == 2'b1) begin
+                if (bar_counter[1:0] == 2'b11) begin
                     case (bar_counter[3:2])
                         2'b00 : c2 <= D;
                         2'b01 : c2 <= E;
@@ -173,19 +175,19 @@ module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sampl
     always @(*) begin
         /* generate samples */
         if ((slot_counter[$clog2(TIMESLOT)-1:0] > (TIMESLOT*3)/4) || ({mask_1[0],mask_2} == 2'b0) || (~phacc1[$clog2(SAMPLE_RATE)-1]) || (c1 == 2'b0)) begin
-            s1 = 4'b0;
+            s1 = 4'b1000;
         end else begin
             s1 = (c1 == 2'b1) ? {1'b0,lfsr[3+:3]} : lfsr[3+:4];
         end
         
-        s2     = phacc2[$clog2(SAMPLE_RATE)-1] && mask_1[1];
-        s3     = phacc3[$clog2(SAMPLE_RATE)-1] && mask_1[2];
-        s4     = phacc4[$clog2(SAMPLE_RATE)-1] && mask_1[3];
+        s2     = mask_1[1] ? phacc2[$clog2(SAMPLE_RATE)-1] ? 4'b1100 : 4'b0100 : 4'b1000;
+        s3     = mask_1[2] ? phacc3[$clog2(SAMPLE_RATE)-1] ? 4'b1100 : 4'b0100 : 4'b1000;
+        s4     = mask_1[3] ? phacc4[$clog2(SAMPLE_RATE)-1] ? 4'b1100 : 4'b0100 : 4'b1000;
     
         /* mix samples */
-        sample_int = s1 + {4{s2}} + {4{s3}} + {4{s4}};
+        sample_int = s1 + s2 + s3 + s4;
     end
         
-    assign {s1_o, s2_o, s3_o, s4_o} = {s1, {4{s2}}, {4{s3}}, {4{s4}}};
+    assign {s1_o, s2_o, s3_o, s4_o} = {s1, s2, s3, s4};
 
 endmodule
