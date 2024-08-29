@@ -93,20 +93,20 @@ async def test_project(dut):
 
       # end of HSync pulse; check pulse width
       if new_hsync and not old_hsync:
-        assert (time - last_hsync_start) == 96
+        assert (time - last_hsync_start) == 96*2
         last_hsync_end = time
 
       # only have RGB output during the addressable portion of a frame
       assert ((new_out & RGB_MASK) == 0) or (
-        ((time - last_hsync_end) >= 48) and
-        ((time - last_hsync_end) < 688) and
+        ((time - last_hsync_end) >= 48*2) and
+        ((time - last_hsync_end) < 688*2) and
         ((time - last_vsync_end) >= (CLOCKS_IN_LINE * (25 + 8))) and
         ((time - last_vsync_end) < (CLOCKS_IN_LINE * (25 + 8 + 480)))
       )
       
       if last_hsync_end:
-          if (((time - last_hsync_end) >= 48) and
-            ((time - last_hsync_end) < 688) and
+          if (((time - last_hsync_end) >= 48*2) and
+            ((time - last_hsync_end) < 688*2) and
             ((time - last_vsync_end) >= (CLOCKS_IN_LINE * (25 + 8))) and
             ((time - last_vsync_end) < (CLOCKS_IN_LINE * (25 + 8 + 480)))):
             r = (new_out&1 << 1)        | ((new_out>>4 & 1))
