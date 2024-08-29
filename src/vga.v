@@ -83,8 +83,8 @@ module vga(input wire clock,   input wire reset,  input wire ena,
     localparam ENDY2   = ENDY+DDIFF;
     
     always @(*) begin
-        hsync = !(x > HVIS+HFP && x < HVIS+HFP+HSYNC);
-        vsync = !(y > VVIS+VFP && y < VVIS+VFP+VSYNC);
+        hsync = !(x > HVIS+HFP && x <= HVIS+HFP+HSYNC);
+        vsync = !(y > VVIS+VFP && y <= VVIS+VFP+VSYNC);
         {r, g, b} = 6'b0;
         if (x < HVIS && y < VVIS) begin
             {r, g, b} = bg;
