@@ -5,6 +5,8 @@ import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import ClockCycles
 
+import collections
+
 VSYNC_MASK = 0x08
 HSYNC_MASK = 0x80
 RGB_MASK = 0x77
@@ -59,6 +61,9 @@ async def test_project(dut):
     old_hsync = ((old_out & HSYNC_MASK) != 0)
     last_vsync_end, last_hsync_end = None, None
 
+    frames = collections.defaultdict(list)
+    pixel = 0
+
     # step through a few video frames,
     # making sure the appropriate invariants are maintained for
     # 640 x 480 video at 60 Hz (non-interlaced)
@@ -102,10 +107,24 @@ async def test_project(dut):
         ((time - last_vsync_end) >= (CLOCKS_IN_LINE * (25 + 8))) and
         ((time - last_vsync_end) < (CLOCKS_IN_LINE * (25 + 8 + 480)))
       )
-
+      
+      if (((time - last_hsync_end) >= 48) and
+        ((time - last_hsync_end) < 688) and
+        ((time - last_vsync_end) >= (CLOCKS_IN_LINE * (25 + 8))) and
+        ((time - last_vsync_end) < (CLOCKS_IN_LINE * (25 + 8 + 480)))):
+        r = (new_out&1 << 1)        | ((new_out>>4 & 1))
+        g = (((new_out>>1)&1) << 1) | ((new_out>>5 & 1))
+        b = (((new_out>>2)&1) << 1) | ((new_out>>6 & 1))
+            
+        frames[frame_no].append((r, g, b))
+      
       old_out, old_vsync, old_hsync = new_out, new_vsync, new_hsync
 
-
+    for frame_no, data in frames:
+        with open(f'frame_{frame_no:02d}.ppm','w') as f:
+            print('P3\n640 480\n255\n',file=f)
+            for r, g, b in data:
+                print(f'{r<<6:d} {g<<6:d} {b<<6:d}',file=f)
 
     # Keep testing the module by changing the input values, waiting for
     # one or more clock cycles, and asserting the expected output values.
