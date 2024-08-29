@@ -11,8 +11,8 @@ VSYNC_MASK = 0x08
 HSYNC_MASK = 0x80
 RGB_MASK = 0x77
 
-CLOCKS_IN_LINE = 800
-LINES_IN_FRAME = 525
+CLOCKS_IN_LINE = 800*2
+LINES_IN_FRAME = 525*2
 
 @cocotb.test()
 async def test_project(dut):
@@ -104,15 +104,16 @@ async def test_project(dut):
         ((time - last_vsync_end) < (CLOCKS_IN_LINE * (25 + 8 + 480)))
       )
       
-      if (((time - last_hsync_end) >= 48) and
-        ((time - last_hsync_end) < 688) and
-        ((time - last_vsync_end) >= (CLOCKS_IN_LINE * (25 + 8))) and
-        ((time - last_vsync_end) < (CLOCKS_IN_LINE * (25 + 8 + 480)))):
-        r = (new_out&1 << 1)        | ((new_out>>4 & 1))
-        g = (((new_out>>1)&1) << 1) | ((new_out>>5 & 1))
-        b = (((new_out>>2)&1) << 1) | ((new_out>>6 & 1))
-            
-        frames[frame_no].append((r, g, b))
+      if last_hsync_end:
+          if (((time - last_hsync_end) >= 48) and
+            ((time - last_hsync_end) < 688) and
+            ((time - last_vsync_end) >= (CLOCKS_IN_LINE * (25 + 8))) and
+            ((time - last_vsync_end) < (CLOCKS_IN_LINE * (25 + 8 + 480)))):
+            r = (new_out&1 << 1)        | ((new_out>>4 & 1))
+            g = (((new_out>>1)&1) << 1) | ((new_out>>5 & 1))
+            b = (((new_out>>2)&1) << 1) | ((new_out>>6 & 1))
+                
+            frames[frame_no].append((r, g, b))
       
       old_out, old_vsync, old_hsync = new_out, new_vsync, new_hsync
 
