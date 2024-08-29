@@ -1,20 +1,20 @@
-<!---
-
-This file is used to generate your project datasheet. Please fill in the information below and delete any unused
-sections.
-
-You can also include images in this folder and reference them in the markdown. Each image must be less than
-512 kb in size, and the combined size of all images must be less than 1 MB.
--->
-
 ## How it works
 
-Explain how your project works
+My entry to the Tinytapeout Demoscene Competition.
+
+It (pseudo-randomly) generates a soundtrack via PWM and displays a waveform via VGA.
 
 ## How to test
 
-Explain how to use your project
+Connect VGA and PWM Pmod.
+
+Then just apply clock and (asynchronous) reset.
 
 ## External hardware
 
-List external hardware used in your project (e.g. PMOD, LED display, etc), if any
+The project uses:
+
+* Tiny VGA Pmod via `uo_out[7:0]` (https://github.com/mole99/tiny-vga)
+* Mike's audio Pmod via `uio_out[7]` (https://github.com/MichaelBell/tt-audio-pmod)
+
+
