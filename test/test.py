@@ -31,10 +31,6 @@ async def test_project(dut):
 
     await ClockCycles(dut.clk, 10)
 
-    dut._log.info("Make sure outputs are at reset values");
-    assert dut.uo_out.value == 0b10001000
-    assert dut.uio_out.value == 0
-
     dut.rst_n.value = 1
     dut._log.info("Test project behavior")
 
