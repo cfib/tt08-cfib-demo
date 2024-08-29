@@ -2,7 +2,7 @@
 project:
   title:        "cfib Demoscene Entry"      # Project title
   author:       "Christian Fibich"          # Your name
-  discord:      ""      # Your discord username, for communication and automatically assigning you a Tapeout role (optional)
+  discord:      "cfib90"      # Your discord username, for communication and automatically assigning you a Tapeout role (optional)
   description:  "Generates VGA video and PWM audio"      # One line description of what your project does
   language:     "Verilog" # other examples include SystemVerilog, Amaranth, VHDL, etc
   clock_hz:     50000000       # Clock frequency in Hz (or 0 if not applicable)
