@@ -31,7 +31,7 @@ module top_tb();
         @(posedge clock);
         @(posedge clock);
         @(posedge clock);
-        repeat(10) begin
+        repeat(60) begin
             $display("frame %d",i);
             $sformat(filename, "frame-%0d.ppm",i);
             fp = $fopen(filename,"w");
@@ -39,7 +39,7 @@ module top_tb();
             for (y = 0; y < 525; y=y+1) begin
                 for (x = 0; x < 800; x=x+1) begin
                     if (x < 640 && y < 480)
-                        $fwrite(fp,"%d %d %d\n", {r,6'b0}, {g,6'b0}, {b,6'b0});
+                        $fwrite(fp,"%0d %0d %0d\n", {r,6'b0}, {g,6'b0}, {b,6'b0});
                     @(posedge clock);
                     @(posedge clock);
                 end
@@ -61,11 +61,11 @@ module top_tb();
         s = 0;
         while (1) begin
             count = 0;
-            for (sample_cnt = 0; sample_cnt < 3051; sample_cnt=sample_cnt+1) begin
+            for (sample_cnt = 0; sample_cnt < 3279; sample_cnt=sample_cnt+1) begin
                 count = count + pwm;
                 @(posedge clock);
             end
-            audio_byte = (count*255)/3051;
+            audio_byte = (count*255)/3279;
             $display("sample %d",s);
             s = s+1;
             $fwrite(audio_file,"%c",audio_byte);

@@ -109,10 +109,10 @@ module sndgen #(parameter SAMPLE_RATE=16384) (input wire clock, input wire sampl
         if (reset) begin
             slot_counter   <= 0;
             c1             <= 2;
-            c2             <= 3;
-            c3             <= 4;
-            c4             <= 5;
-            mask_1         <= 4'hf;
+            c2             <= 0;
+            c3             <= 0;
+            c4             <= 0;
+            mask_1         <= 4'h0;
             mask_2         <= 1'b1;
             phacc2         <= 0;
             phacc3         <= 0;
